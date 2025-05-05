@@ -27,7 +27,7 @@ services:
       - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
     command:
       - "http"
-      - "http://host.docker.internal:5678"
+      - "n8n:5678"
     depends_on:
       - n8n
     networks:
