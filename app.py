@@ -1,11 +1,35 @@
+import os
 import aiohttp
 import asyncio
-from config import *
+from typing import List
+from dotenv import load_dotenv
 from telethon import TelegramClient, events
+
+load_dotenv()
+
+# Telegram API credentials
+API_ID = os.getenv('API_ID', '0')
+API_HASH = os.getenv('API_HASH', '')
+SESSION_NAME = os.getenv('SESSION_NAME', 'session_name')
+
+# Webhook
+WEBHOOK_URL = os.getenv('WEBHOOK_URL', '')
+
+# Список каналов для мониторинга
+# Можно добавить как переменную окружения CHANNELS, разделяя каналы запятыми
+CHANNELS: List[str] = os.getenv('CHANNELS', '').split(',') if os.getenv('CHANNELS') else []
+
+# Проверка обязательных переменных
+if not all([API_ID, API_HASH, SESSION_NAME, WEBHOOK_URL]):
+    raise ValueError(
+        "Необходимо указать все обязательные переменные окружения: "
+        "API_ID, API_HASH, SESSION_NAME, WEBHOOK_URL"
+    )
+
 
 
 class TelegramNewsBot:
-    def __init__(self, channels, limit=20):
+    def __init__(self, channels, limit=1):
         self.client = TelegramClient(SESSION_NAME, API_ID, API_HASH) # type: ignore
         self.channels = channels
         self.limit = limit

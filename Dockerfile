@@ -11,7 +11,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Копируем исходный код приложения
-COPY . .
+COPY app.py .
 
 # Запускаем приложение
-CMD ["python", "main.py"]
+CMD ["python", "app.py"]
