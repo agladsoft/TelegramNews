@@ -26,9 +26,8 @@ services:
     environment:
       - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
     command:
-      - "ngrok"
       - "http"
-      - "5678"  # Проксируем n8n сервис
+      - "http://host.docker.internal:5678"
     depends_on:
       - n8n
     networks:
