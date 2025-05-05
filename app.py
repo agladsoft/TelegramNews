@@ -1,4 +1,3 @@
-import re
 import aiohttp
 import asyncio
 from config import *
@@ -6,101 +5,11 @@ from telethon import TelegramClient, events
 
 
 class TelegramNewsBot:
-    def __init__(self, channels, limit=2):
+    def __init__(self, channels, limit=20):
         self.client = TelegramClient(SESSION_NAME, API_ID, API_HASH) # type: ignore
         self.channels = channels
         self.limit = limit
         self._sent_group_ids = set()
-
-    @staticmethod
-    def escape_telegram_usernames(text):
-        """
-        Экранирует символы подчеркивания в никнеймах Telegram (@username_with_underscores)
-        чтобы избежать ошибок парсинга MarkdownV2.
-        """
-        import re
-        # Экранируем все подчеркивания в словах, начинающихся с @ и содержащих _
-        def replacer(match):
-            return match.group(0).replace('_', '\\_')
-        # Слово начинается с @, за которым идут буквы/цифры/подчеркивания, и есть хотя бы один _
-        return re.sub(r'@\w*_\w*', replacer, text)
-
-    def escape_markdown_v2(self, text):
-        """
-        Escape Markdown v2 and convert Telegram-style formatting to Markdown.
-
-        This function escapes Markdown syntax in Telegram messages, except for URLs.
-        It also converts Telegram-style formatting (e.g. **bold**, __italic__, etc.) to Markdown.
-
-        :param text: The text to escape and convert
-        :return: The escaped and converted text
-        """
-        # Экранируем никнеймы с подчеркиванием
-        text = self.escape_telegram_usernames(text)
-
-        # Обрабатываем ссылки отдельно, чтобы не экранировать URL
-        link_pattern = re.compile(r'(\[([^]]+)]\(([^)]+)\))')
-        pos = 0
-        result = ''
-
-        for m in link_pattern.finditer(text):
-            # Экранируем текст до текущей ссылки
-            before = text[pos:m.start()]
-            before = re.sub(PATTERN_URL, r'\\\1', before)
-
-            # Экранируем только текст внутри []
-            link_text = re.sub(PATTERN_URL, r'\\\1', m.group(2))
-            url = m.group(3)  # URL не экранируем
-
-            result += before + f'[{link_text}]({url})'
-            pos = m.end()
-
-        # Экранируем текст после последней ссылки
-        after = text[pos:]
-        after = re.sub(PATTERN_URL, r'\\\1', after)
-        result += after
-
-        # Преобразуем стилевое форматирование Markdown
-        formatting_rules = [
-            (r'\*\*(.+?)\*\*', r'*\1*'),  # Жирный текст
-            (r'__(.+?)__', r'__\1__'),  # Подчёркнутый текст
-            (r'_(.+?)_', r'_\1_'),  # Курсив
-            (r'~(.+?)~', r'~\1~'),  # Зачёркнутый текст
-            (r'\|\|(.+?)\|\|', r'||\1||')  # Спойлер
-        ]
-
-        for pattern, replacement in formatting_rules:
-            result = re.sub(pattern, replacement, result)
-
-        return result
-
-    def format_caption(self, message, channel):
-        """
-        Formats a caption for a message based on its source and content.
-
-        The caption will include the source title and a link to the message in the source
-        channel. If the source channel has no username, the caption will only include the
-        source title.
-
-        The content of the message is escaped using Markdown v2 rules.
-
-        :param message: The message to format the caption for
-        :param channel: The source channel of the message
-        :return: The formatted caption
-        """
-        source_title = channel.lstrip('@') if channel else 'Unknown'
-        source_username = channel.lstrip('@') if channel else None
-
-        if source_username:
-            post_link = f"https://t.me/{source_username}/{getattr(message, 'id', '')}"
-            safe_title = re.sub(PATTERN_URL, r'\\\1', source_title)
-            caption = f"🔁 Переслано из [{safe_title}]({post_link})"
-        else:
-            safe_title = re.sub(PATTERN_URL, r'\\\1', source_title)
-            caption = f"🔁 Переслано из {safe_title}"
-        if message.text:
-            caption += "\n\n" + self.escape_markdown_v2(message.text)
-        return caption
 
     @staticmethod
     async def send_to_n8n(data):
@@ -132,6 +41,24 @@ class TelegramNewsBot:
             grouped[key].append(m)
         return [sorted(grouped[k], key=lambda message: message.id) for k in order]
 
+    @staticmethod
+    def escape_text(text: str) -> str:
+        """
+        Escapes special characters in a given string so that it can be safely used as a markdown string.
+
+        :param text: The string to escape
+        :return: The escaped string
+        """
+        # sourcery skip: assign-if-exp, inline-immediately-returned-variable, use-join
+        special_chars = "_*[]()~`>#+-=|{}.!"
+        escaped_text = ''
+        for char in text:
+            if char in special_chars:
+                escaped_text += '\\' + char
+            else:
+                escaped_text += char
+        return escaped_text
+
     def _build_payload(self, channel, msgs):
         """
         Builds a payload to be sent to the n8n webhook from a list of messages.
@@ -146,9 +73,9 @@ class TelegramNewsBot:
         """
         text = ''.join(m.text or '' for m in msgs)
         first = msgs[0]
-        safe_title = re.sub(PATTERN_URL, r'\\1', channel.lstrip('@') or 'Unknown')
         post_link = f"https://t.me/{channel.lstrip('@')}/{getattr(first, 'id', '')}"
-        caption = f"🔁 Переслано из [{safe_title}]({post_link})\n\n{self.escape_markdown_v2(text)}"
+        caption = self.escape_text(f"🔁 Переслано из {post_link}\n\n{text}")
+
         return {
             "channel": channel,
             "text": text,
