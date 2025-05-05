@@ -14,6 +14,8 @@ services:
       - API_HASH=${API_HASH}
       - SESSION_NAME=${SESSION_NAME}
       - WEBHOOK_URL=${WEBHOOK_URL}
+    networks:
+      - app-network
 
   ngrok:
     image: ngrok/ngrok:latest
@@ -28,6 +30,8 @@ services:
       - "n8n:5678"  # Проксируем n8n сервис
     depends_on:
       - n8n
+    networks:
+      - app-network
 
   n8n:
     image: n8nio/n8n:latest
@@ -42,6 +46,8 @@ services:
       - N8N_SECURE_COOKIE=false
     volumes:
       - ./n8n-data:/home/node/.n8n
+    networks:
+      - app-network
 
   qdrant:
     image: qdrant/qdrant:latest
@@ -52,4 +58,11 @@ services:
       - "6334:6334"  # gRPC порт
     volumes:
       - ./qdrant_storage:/qdrant/storage
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
 
