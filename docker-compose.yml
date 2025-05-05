@@ -26,7 +26,9 @@ services:
     environment:
       - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
     command:
-      - "ngrok http 5678"
+      - "ngrok"
+      - "http"
+      - "5678"  # Проксируем n8n сервис
     depends_on:
       - n8n
     networks:
