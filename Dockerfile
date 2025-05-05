@@ -12,6 +12,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Копируем исходный код приложения
 COPY app.py .
+COPY session_name.session .
 
 # Запускаем приложение
 CMD ["python", "app.py"]

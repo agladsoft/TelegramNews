@@ -14,8 +14,6 @@ services:
       - API_HASH=${API_HASH}
       - SESSION_NAME=${SESSION_NAME}
       - WEBHOOK_URL=${WEBHOOK_URL}
-    volumes:
-      - ./:/app/sessions  # Для хранения сессий Telethon
 
   n8n:
     image: n8nio/n8n:latest

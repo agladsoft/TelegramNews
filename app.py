@@ -1,11 +1,20 @@
 import os
 import aiohttp
 import asyncio
+import logging
 from typing import List
 from dotenv import load_dotenv
 from telethon import TelegramClient, events
 
 load_dotenv()
+
+# Настройка логирования
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
 
 # Telegram API credentials
 API_ID = os.getenv('API_ID', '0')
@@ -125,7 +134,7 @@ class TelegramNewsBot:
             for group in self._group_messages(msgs):
                 await self.send_to_n8n(self._build_payload(channel, group))
         await self.client.disconnect()
-        print(f"✅ Отправлены последние {self.limit} логических сообщений из каждого канала в n8n")
+        logging.info(f"✅ Отправлены последние {self.limit} логических сообщений из каждого канала в n8n")
 
     async def listen_for_new_messages(self):
         """
@@ -154,7 +163,7 @@ class TelegramNewsBot:
                     self._sent_group_ids.add(gid)
                     break
         await self.client.start()
-        print("👂 Слушаю новые сообщения и отправляю их в n8n...")
+        logging.info("👂 Слушаю новые сообщения и отправляю их в n8n...")
         await self.client.run_until_disconnected()
 
 
